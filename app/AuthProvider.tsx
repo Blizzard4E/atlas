@@ -1,5 +1,6 @@
 "use client";
 import { createContext, useContext, useEffect, useState } from "react";
+import { getSession } from "./actions";
 
 interface User {
     email: string;
@@ -20,14 +21,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     useEffect(() => {
         async function fetchUserData() {
-            const response = await fetch("/api/session", {
-                cache: "no-store",
-            });
-            const data = await response.json();
-            setUser({
-                email: data.userData.email,
-            });
-            console.log(data.userData);
+            let userData = await getSession();
+            console.log(userData);
+            setUser(userData);
         }
         fetchUserData();
     }, []);

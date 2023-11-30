@@ -48,3 +48,13 @@ export async function loginAction(formData: FormData) {
     const userData: JwtPayload = jwtDecode(data.accessToken) as JwtPayload;
     return { email: userData.email };
 }
+
+export async function getSession() {
+    const cookieStore = cookies();
+    const accessToken = cookieStore.get("accessToken");
+    if (accessToken) {
+        let userData: JwtPayload = jwtDecode(accessToken.value);
+        return { email: userData.email };
+    }
+    return null;
+}

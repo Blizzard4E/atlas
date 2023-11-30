@@ -15,9 +15,7 @@ interface UserContextType {
 const UserContext = createContext<UserContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
-    const [user, setUser] = useState<User | null>({
-        email: "123",
-    });
+    const [user, setUser] = useState<User | null>(null);
 
     useEffect(() => {
         async function fetchUserData() {

@@ -1,23 +1,22 @@
 import Image from "next/image";
 import Link from "next/link";
-import { useAuth } from "./AuthProvider";
-import { ContextTest } from "./ContextTest";
+import { loginAction } from "../actions";
+import LoginForm from "./form";
 
-export default function Home() {
+export default function Login() {
     return (
         <div className="bg-gray-950 w-full h-[100vh] grid place-items-center">
             <div className="grid gap-8">
                 <h1 className="text-5xl font-bold text-white text-center">
-                    Home
+                    Login
                 </h1>
-                <ContextTest />
-                <ul className="w-64 flex justify-between">
+                <ul className="w-80 flex justify-between">
                     <li>
                         <Link
                             className="text-xl text-white hover:text-emerald-500 p-6"
-                            href="/login"
+                            href="/"
                         >
-                            Login
+                            Home
                         </Link>
                     </li>
                     <li>
@@ -29,6 +28,7 @@ export default function Home() {
                         </Link>
                     </li>
                 </ul>
+                <LoginForm />
             </div>
         </div>
     );

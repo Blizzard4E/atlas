@@ -17,6 +17,7 @@ const UserContext = createContext<UserContextType | undefined>(undefined);
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const [user, setUser] = useState<User | null>(null);
 
+    //On Mounted Run once, retrigger when refresh page
     useEffect(() => {
         async function fetchUserData() {
             let userData = await getSession();

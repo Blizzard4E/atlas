@@ -45,10 +45,11 @@ export async function loginAction(formData: FormData) {
         setJWTCookie(data.accessToken, expirationTime);
     }
     // Explicitly define the type of decoded data as JwtPayload
-    const userData: JwtPayload = jwtDecode(data.accessToken) as JwtPayload;
+    const userData: JwtPayload = jwtDecode(data.accessToken);
     return { email: userData.email };
 }
 
+//get User session
 export async function getSession() {
     const cookieStore = cookies();
     const accessToken = cookieStore.get("accessToken");

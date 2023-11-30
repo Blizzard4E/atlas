@@ -14,7 +14,6 @@ export default function LoginForm() {
                 console.log(userData);
                 setUser(userData);
                 router.push("/");
-                router.refresh();
             }}
             className="grid gap-4 w-80"
         >

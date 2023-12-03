@@ -13,7 +13,7 @@ export default function Login() {
                 <ul className="w-80 flex justify-between">
                     <li>
                         <Link
-                            className="text-xl text-white hover:text-emerald-500 p-6"
+                            className="block text-xl text-white hover:text-emerald-500 p-6"
                             href="/"
                         >
                             Home
@@ -21,14 +21,16 @@ export default function Login() {
                     </li>
                     <li>
                         <Link
-                            className="text-xl text-white hover:text-emerald-500 p-6"
+                            className="block text-xl text-white hover:text-emerald-500 p-6"
                             href="/sign-up"
                         >
                             Sign Up
                         </Link>
                     </li>
                 </ul>
-                <LoginForm />
+                <div className="grid place-items-center">
+                    <LoginForm />
+                </div>
             </div>
         </div>
     );

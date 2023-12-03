@@ -2,6 +2,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { useAuth } from "./AuthProvider";
 import { ContextTest } from "./ContextTest";
+import { logOut } from "./actions";
+import LogOut from "./LogOut";
 
 export default function Home() {
     return (
@@ -11,10 +13,10 @@ export default function Home() {
                     Home
                 </h1>
                 <ContextTest />
-                <ul className="w-64 flex justify-between">
+                <ul className="w-96 flex justify-between">
                     <li>
                         <Link
-                            className="text-xl text-white hover:text-emerald-500 p-6"
+                            className="block text-xl text-white hover:text-emerald-500 p-6"
                             href="/login"
                         >
                             Login
@@ -22,11 +24,14 @@ export default function Home() {
                     </li>
                     <li>
                         <Link
-                            className="text-xl text-white hover:text-emerald-500 p-6"
+                            className="block text-xl text-white hover:text-emerald-500 p-6"
                             href="/sign-up"
                         >
                             Sign Up
                         </Link>
+                    </li>
+                    <li>
+                        <LogOut />
                     </li>
                 </ul>
             </div>

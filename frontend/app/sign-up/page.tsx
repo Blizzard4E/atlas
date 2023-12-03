@@ -8,10 +8,10 @@ export default function Login() {
                 <h1 className="text-5xl font-bold text-white text-center">
                     Sign Up
                 </h1>
-                <ul className="w-80 flex justify-between">
+                <ul className="w-96 flex justify-between">
                     <li>
                         <Link
-                            className="text-xl text-white hover:text-emerald-500 p-6"
+                            className="block text-xl text-white hover:text-emerald-500 p-6"
                             href="/"
                         >
                             Home
@@ -19,7 +19,7 @@ export default function Login() {
                     </li>
                     <li>
                         <Link
-                            className="text-xl text-white hover:text-emerald-500 p-6"
+                            className="block text-xl text-white hover:text-emerald-500 p-6"
                             href="/login"
                         >
                             Login

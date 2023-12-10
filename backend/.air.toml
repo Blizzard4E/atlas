@@ -1,0 +1,6 @@
+# air.toml
+root = "." # project root
+tmp_dir = "tmp" # temporary directory, defaults to "tmp"
+build_cmd = "go build -o ./tmp/main ." # build command
+binary = "./tmp/main" # path to binary executable
+clear_delay = 0 # clear delay, defaults to 0 (unit: milliseconds)

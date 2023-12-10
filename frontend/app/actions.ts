@@ -36,7 +36,7 @@ export async function loginAction(formData: FormData) {
         console.log(data);
         setTokenCookie(data.sessionID, expirationTime);
         //const userData: JwtPayload = jwtDecode(data.sessionID);
-        return { status: 200, message: "success", email: data.email };
+        return { status: 200, message: "success", email: data.user.email };
     }
     return { status: 400, message: "Wrong Email or Password" };
 }

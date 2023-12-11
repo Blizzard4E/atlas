@@ -15,7 +15,11 @@ export default function LoginForm() {
                 let response = await loginAction(formData);
                 if (response.status == 200) {
                     if (response.email) {
-                        setUser({ email: response.email });
+                        setUser({
+                            id: response.id,
+                            username: response.username,
+                            email: response.email,
+                        });
                     }
                     router.push("/");
                 } else {

@@ -9,8 +9,9 @@ export const ContextTest = () => {
     });
     return (
         <div>
-            {user && (
+            {user != null && (
                 <div>
+                    <h2 className="text-white">Username: {user?.username}</h2>
                     <h2 className="text-white">Email: {user?.email}</h2>
                 </div>
             )}

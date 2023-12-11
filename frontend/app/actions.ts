@@ -17,6 +17,35 @@ function setTokenCookie(tokenValue: string, date: Date) {
     });
 }
 
+export async function signUpAction(formData: FormData) {
+    let res = await fetch("http://localhost:8080/sign-up", {
+        method: "POST",
+        cache: "no-store",
+        headers: {
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+            username: formData.get("username"),
+            email: formData.get("email"),
+            password: formData.get("password"),
+        }),
+    });
+    let data = await res.json();
+    if (res.status == 200) {
+        console.log(data);
+        setTokenCookie(data.sessionID, expirationTime);
+        //const userData: JwtPayload = jwtDecode(data.sessionID);
+        return {
+            status: 200,
+            message: "success",
+            id: data.user.id,
+            username: data.user.username,
+            email: data.user.email,
+        };
+    }
+    return { status: 400, message: "Email already exist" };
+}
+
 //Actions called from login form in login page
 export async function loginAction(formData: FormData) {
     //console.log(formData);
@@ -36,7 +65,13 @@ export async function loginAction(formData: FormData) {
         console.log(data);
         setTokenCookie(data.sessionID, expirationTime);
         //const userData: JwtPayload = jwtDecode(data.sessionID);
-        return { status: 200, message: "success", email: data.user.email };
+        return {
+            status: 200,
+            message: "success",
+            id: data.user.id,
+            username: data.user.username,
+            email: data.user.email,
+        };
     }
     return { status: 400, message: "Wrong Email or Password" };
 }
@@ -55,7 +90,11 @@ export async function getSession() {
                 },
             });
             let data = await res.json();
-            return { email: data.email };
+            if (res.status == 400) {
+                cookies().delete("session_id");
+                return null;
+            }
+            return { id: data.id, username: data.username, email: data.email };
         }
     }
     return null;

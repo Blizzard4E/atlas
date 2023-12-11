@@ -34,6 +34,14 @@ export default function Home() {
                         <LogOut />
                     </li>
                 </ul>
+                <div className="grid place-items-center">
+                    <Link
+                        className="block text-xl text-white hover:text-emerald-500 p-6"
+                        href="/characters"
+                    >
+                        Characters
+                    </Link>
+                </div>
             </div>
         </div>
     );

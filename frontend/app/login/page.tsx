@@ -1,6 +1,4 @@
-import Image from "next/image";
 import Link from "next/link";
-import { loginAction } from "../actions";
 import LoginForm from "./form";
 
 export default function Login() {

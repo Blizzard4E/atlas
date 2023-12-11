@@ -1,10 +1,14 @@
 package main
 
 import (
+	"crypto/rand"
 	"database/sql"
+	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	_ "github.com/go-sql-driver/mysql"
@@ -12,6 +16,19 @@ import (
 
 var db *sql.DB
 var err error
+
+func generateSessionToken() (string, error) {
+	// Generate a random byte slice for the token
+	token := make([]byte, 32)
+	_, err := rand.Read(token)
+	if err != nil {
+		return "", err
+	}
+
+	// Encode the random bytes into a base64 string
+	sessionToken := base64.URLEncoding.EncodeToString(token)
+	return sessionToken, nil
+}
 
 func main() {
 
@@ -30,19 +47,97 @@ func main() {
 
 	log.Println("Connected to the database!")
 
-    // Initialize Gin
-    router := gin.Default()
+	// Initialize Gin
+	router := gin.Default()
 
-    // Define a GET endpoint
-    router.GET("/hello", func(c *gin.Context) {
-        c.JSON(http.StatusOK, gin.H{
-            "message": "Hello, welcome to the Gin API!",
-        })
-    })
+	// Define a GET endpoint
+	router.GET("/hello", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{
+			"message": "Hello, welcome to the Gin API!",
+		})
+	})
+
+	router.POST("/sign-up", func(c *gin.Context) {
+		var requestBody struct {
+			Username string `json:"username"`
+			Email    string `json:"email"`
+			Password string `json:"password"`
+		}
+
+		if err := c.BindJSON(&requestBody); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"success": false,
+				"message": "Invalid request",
+			})
+			return
+		}
+
+		// Check if the email already exists in the database
+		var emailExists bool
+		err := db.QueryRow("SELECT EXISTS (SELECT 1 FROM users WHERE email = ?)", requestBody.Email).Scan(&emailExists)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Error checking email existence"})
+			return
+		}
+
+		if emailExists {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Email is already in use"})
+			return
+		}
+
+		stmt, err := db.Prepare("INSERT INTO users (username, email, password) VALUES (?, ?, ?)")
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error1": err.Error()})
+			return
+		}
+		defer stmt.Close()
+
+		_, err = stmt.Exec(requestBody.Username, requestBody.Email, requestBody.Password)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error2": err.Error()})
+			return
+		}
+		var userID int
+		var username, userEmail string
+
+		err = db.QueryRow("SELECT id, username, email FROM users WHERE email = ? AND password = ?", requestBody.Email, requestBody.Password).Scan(&userID, &username, &userEmail)
+
+		if err != nil {
+			c.JSON(http.StatusUnauthorized, gin.H{
+				"message": "Authentication failed",
+			})
+		} else {
+			// Simulated user data
+			user := gin.H{
+				"id":       userID,
+				"username": username,
+				"email":    userEmail,
+			}
+
+			// Create a new session token
+			sessionID, err := createOrUpdateSession(userID)
+			if err != nil {
+				// Handle the error
+				fmt.Println("Error creating session:", err)
+				c.JSON(http.StatusBadRequest, gin.H{
+					"message": "Failed creating session",
+				})
+				return
+			}
+
+			c.JSON(http.StatusOK, gin.H{
+				"message":   "Authentication successful",
+				"sessionID": sessionID,
+				"user":      user,
+			})
+		}
+
+		log.Println(http.StatusCreated, gin.H{"message": "User created successfully"})
+	})
 
 	router.POST("/login", func(c *gin.Context) {
 		var requestBody struct {
-			Email string `json:"email"`
+			Email    string `json:"email"`
 			Password string `json:"password"`
 		}
 
@@ -85,18 +180,25 @@ func main() {
 		if isAuthenticated {
 			// Simulated user data
 			user := gin.H{
-				"id": 1,
+				"id":       userID,
 				"username": username,
-				"email": email,
+				"email":    userEmail,
 			}
 
-			// Simulated session ID
-			sessionID := "your_session_id_value_here"
-
+			// Create a new session token
+			sessionID, err := createOrUpdateSession(userID)
+			if err != nil {
+				// Handle the error
+				fmt.Println("Error creating session:", err)
+				c.JSON(http.StatusBadRequest, gin.H{
+					"message": "Failed creating session",
+				})
+				return
+			}
 			c.JSON(http.StatusOK, gin.H{
-				"message": "Authentication successful",
+				"message":   "Authentication successful",
 				"sessionID": sessionID,
-				"user": user,
+				"user":      user,
 			})
 		} else {
 			c.JSON(http.StatusUnauthorized, gin.H{
@@ -107,8 +209,156 @@ func main() {
 
 	router.GET("/users", getUsers)
 
-    // Run the server
-    router.Run(":8080")
+	router.GET("/user-info", func(c *gin.Context) {
+		sessionID, err := c.Cookie("session_id")
+		if err != nil || sessionID == "" {
+			c.JSON(400, gin.H{"error": "No session ID found"})
+			return
+		}
+		userInfo, err := getUserInfoFromSession(sessionID)
+		if err != nil {
+			c.JSON(400, gin.H{"error": "Cant get session"})
+			return
+		}
+		c.JSON(200, userInfo)
+	})
+
+	// Handle POST request to create a new character
+	router.POST("/create-character", func(c *gin.Context) {
+		var requestBody struct {
+			Name        string                 `json:"name"`
+			Title       string                 `json:"title"`
+			Description string                 `json:"description"`
+			CoverPic    string                 `json:"cover_pic"`
+			CoverBg     string                 `json:"cover_bg"`
+			Skills      map[string]interface{} `json:"skills"`
+			UserID      int                    `json:"user_id"`
+			CreatedAt   time.Time              `json:"created_at"`
+			UpdatedAt   time.Time              `json:"updated_at"`
+		}
+
+		// Assuming you receive JSON data in the request body
+		if err := c.BindJSON(&requestBody); err != nil {
+			c.JSON(400, gin.H{"error": "Invalid JSON"})
+			return
+		}
+
+		// Convert requestBody to Character struct
+		newCharacter := Character{
+			Name:        requestBody.Name,
+			Title:       requestBody.Title,
+			Description: requestBody.Description,
+			CoverPic:    requestBody.CoverPic,
+			CoverBg:     requestBody.CoverBg,
+			Skills:      requestBody.Skills,
+			UserID:      requestBody.UserID,
+			CreatedAt:   requestBody.CreatedAt,
+			UpdatedAt:   requestBody.UpdatedAt,
+		}
+
+		// Call createCharacter function to insert the new character into the database
+		if err := createCharacter(newCharacter); err != nil {
+			fmt.Println("Error creating character:", err)
+			c.JSON(500, gin.H{"error": "Failed to create character"})
+			return
+		}
+
+		c.JSON(200, gin.H{"message": "Character created successfully"})
+	})
+
+	// Run the server
+	router.Run(":8080")
+}
+
+type Character struct {
+	Name        string
+	Title       string
+	Description string
+	CoverPic    string
+	CoverBg     string
+	Skills      map[string]interface{} // Assuming skills will be stored as a string in JSON format
+	UserID      int
+	CreatedAt   time.Time
+	UpdatedAt   time.Time
+}
+
+func createCharacter(character Character) error {
+	jsonSkills, err := json.Marshal(character.Skills)
+
+	if err != nil {
+		return err
+	}
+
+	query := `
+        INSERT INTO characters (name, title, description, cover_pic, cover_bg, skills, user_id, created_at, updated_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `
+
+	_, err = db.Exec(query, character.Name, character.Title, character.Description,
+		character.CoverPic, character.CoverBg, jsonSkills, character.UserID, time.Now(), time.Now())
+
+	return err
+}
+
+func createOrUpdateSession(userID int) (string, error) {
+	sessionToken, err := generateSessionToken()
+	if err != nil {
+		return "", err
+	}
+
+	// Check if a session already exists for this user
+	var existingSessionID string
+	err = db.QueryRow("SELECT session_id FROM sessions WHERE user_id = ?", userID).Scan(&existingSessionID)
+
+	if err != nil && err != sql.ErrNoRows {
+		return "", err
+	}
+
+	var query string
+	if existingSessionID != "" {
+		// If a session exists, update the session_id
+		query = "UPDATE sessions SET session_id = ? WHERE user_id = ?"
+	} else {
+		// If no session exists, insert a new session
+		query = "INSERT INTO sessions (session_id, user_id) VALUES (?, ?)"
+	}
+
+	// Execute the appropriate query (insert or update)
+	stmt, err := db.Prepare(query)
+	if err != nil {
+		return "", err
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(sessionToken, userID)
+	if err != nil {
+		return "", err
+	}
+
+	return sessionToken, nil
+}
+
+type UserInfo struct {
+	ID       int    `json:"id"`
+	Username string `json:"username"`
+	Email    string `json:"email"`
+}
+
+func getUserInfoFromSession(sessionToken string) (UserInfo, error) {
+	var userInfo UserInfo
+
+	query := `
+        SELECT id, username, email 
+        FROM users 
+        WHERE id = (SELECT user_id FROM sessions WHERE session_id = ?)
+    `
+
+	err := db.QueryRow(query, sessionToken).Scan(&userInfo.ID, &userInfo.Username, &userInfo.Email)
+	if err != nil {
+		return UserInfo{}, err
+	}
+
+	return userInfo, nil
 }
 
 func getUsers(c *gin.Context) {
@@ -130,9 +380,9 @@ func getUsers(c *gin.Context) {
 		}
 
 		user := gin.H{
-			"id": id,
+			"id":       id,
 			"username": username,
-			"email": email,
+			"email":    email,
 		}
 		users = append(users, user)
 	}

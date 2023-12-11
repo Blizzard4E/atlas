@@ -1,5 +1,5 @@
-import Image from "next/image";
 import Link from "next/link";
+import SignUpForm from "./form";
 
 export default function Login() {
     return (
@@ -26,23 +26,9 @@ export default function Login() {
                         </Link>
                     </li>
                 </ul>
-                <form action="" className="grid gap-4 w-80">
-                    <input
-                        type="text"
-                        placeholder="Email address..."
-                        className="w-full text-lg text-white px-2 py-1 bg-gray-800 rounded-md focus:outline-none focus:outline-emerald-500"
-                    />
-                    <input
-                        type="text"
-                        placeholder="Password..."
-                        className="w-full text-lg text-white px-2 py-1 bg-gray-800 rounded-md focus:outline-none focus:outline-emerald-500"
-                    />
-                    <div className="grid place-items-center">
-                        <button className="text-lg text-white bg-emerald-500 px-3 py-1 rounded-md">
-                            Sign Up
-                        </button>
-                    </div>
-                </form>
+                <div className="grid place-items-center">
+                    <SignUpForm />
+                </div>
             </div>
         </div>
     );

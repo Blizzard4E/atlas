@@ -15,9 +15,9 @@ export default function LogOut() {
                     setUser(null);
                 }
             }}
-            className="text-xl text-white hover:text-red-500 p-6 cursor-pointer"
+            className="text-xl text-white hover:text-red-500 cursor-pointer"
         >
-            <button>Logout</button>
+            <button className="p-6">Logout</button>
         </form>
     );
 }

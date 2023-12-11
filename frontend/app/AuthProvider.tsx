@@ -3,6 +3,8 @@ import { createContext, useContext, useEffect, useState } from "react";
 import { getSession } from "./actions";
 
 interface User {
+    id: string;
+    username: string;
     email: string;
     // Add more user properties if needed
 }
@@ -22,7 +24,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         async function fetchUserData() {
             let userData = await getSession();
             console.log(userData);
-            setUser(userData);
+            if (userData) {
+                setUser(userData);
+            } else setUser(null);
         }
         fetchUserData();
     }, []);

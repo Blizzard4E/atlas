@@ -41,6 +41,12 @@ export default function Home() {
                     >
                         Characters
                     </Link>
+                    <Link
+                        className="block text-xl text-white hover:text-emerald-500 p-6"
+                        href="/dashboard"
+                    >
+                        Dashboard
+                    </Link>
                 </div>
             </div>
         </div>

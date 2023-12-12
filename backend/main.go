@@ -226,15 +226,14 @@ func main() {
 	// Handle POST request to create a new character
 	router.POST("/create-character", func(c *gin.Context) {
 		var requestBody struct {
-			Name        string                 `json:"name"`
-			Title       string                 `json:"title"`
-			Description string                 `json:"description"`
-			CoverPic    string                 `json:"cover_pic"`
-			CoverBg     string                 `json:"cover_bg"`
-			Skills      map[string]interface{} `json:"skills"`
-			UserID      int                    `json:"user_id"`
-			CreatedAt   time.Time              `json:"created_at"`
-			UpdatedAt   time.Time              `json:"updated_at"`
+			Name        string  `json:"name"`
+			Title       string  `json:"title"`
+			Description string  `json:"description"`
+			CoverPic    string  `json:"cover_pic"`
+			CoverBg     string  `json:"cover_bg"`
+			Universe    string  `json:"universe"`
+			Skills      []Skill `json:"skills"`
+			UserID      int     `json:"user_id"`
 		}
 
 		// Assuming you receive JSON data in the request body
@@ -243,6 +242,13 @@ func main() {
 			return
 		}
 
+		sessionID, err := c.Cookie("session_id")
+		if err != nil || sessionID == "" {
+			c.JSON(400, gin.H{"error": "No session ID found"})
+			return
+		}
+		userInfo, err := getUserInfoFromSession(sessionID)
+
 		// Convert requestBody to Character struct
 		newCharacter := Character{
 			Name:        requestBody.Name,
@@ -250,10 +256,11 @@ func main() {
 			Description: requestBody.Description,
 			CoverPic:    requestBody.CoverPic,
 			CoverBg:     requestBody.CoverBg,
+			Universe:    requestBody.Universe,
 			Skills:      requestBody.Skills,
-			UserID:      requestBody.UserID,
-			CreatedAt:   requestBody.CreatedAt,
-			UpdatedAt:   requestBody.UpdatedAt,
+			UserID:      userInfo.ID,
+			CreatedAt:   time.Now(),
+			UpdatedAt:   time.Now(),
 		}
 
 		// Call createCharacter function to insert the new character into the database
@@ -266,17 +273,75 @@ func main() {
 		c.JSON(200, gin.H{"message": "Character created successfully"})
 	})
 
+	router.GET("/characters", func(c *gin.Context) {
+		rows, err := db.Query("SELECT * FROM characters")
+		if err != nil {
+			c.JSON(500, gin.H{"error": "Failed to fetch characters"})
+			return
+		}
+		defer rows.Close()
+		columns, err := rows.Columns()
+		if err != nil {
+			c.JSON(500, gin.H{"error": "Failed to fetch characters"})
+			return
+		}
+		values := make([]interface{}, len(columns))
+		valuePtrs := make([]interface{}, len(columns))
+
+		var characters []map[string]interface{}
+		for rows.Next() {
+			for i := range columns {
+				valuePtrs[i] = &values[i]
+			}
+
+			if err := rows.Scan(valuePtrs...); err != nil {
+				c.JSON(500, gin.H{"error": "Failed to fetch characters"})
+				return
+			}
+
+			entry := make(map[string]interface{})
+			for i, colName := range columns {
+				var v interface{}
+				val := values[i]
+				b, ok := val.([]byte)
+				if ok {
+					if colName == "skills" { // Check if column is "skills"
+						var skillsJSON []map[string]interface{}
+						if err := json.Unmarshal(b, &skillsJSON); err != nil {
+							c.JSON(500, gin.H{"error": "Failed to unmarshal skills JSON"})
+							return
+						}
+						v = skillsJSON // Assign parsed JSON to the value
+					} else {
+						v = string(b) // Convert []byte to string
+					}
+				} else {
+					v = val
+				}
+				entry[colName] = v
+			}
+			characters = append(characters, entry)
+		}
+		c.JSON(200, characters)
+	})
+
 	// Run the server
 	router.Run(":8080")
 }
 
+type Skill struct {
+	Pic         string `json:"pic"`
+	Title       string `json:"title"`
+	Description string `json:"description"`
+}
 type Character struct {
 	Name        string
 	Title       string
 	Description string
 	CoverPic    string
 	CoverBg     string
-	Skills      map[string]interface{} // Assuming skills will be stored as a string in JSON format
+	Universe    string
+	Skills      []Skill `json:"skills"` // Assuming skills will be stored as a string in JSON format
 	UserID      int
 	CreatedAt   time.Time
 	UpdatedAt   time.Time
@@ -290,12 +355,12 @@ func createCharacter(character Character) error {
 	}
 
 	query := `
-        INSERT INTO characters (name, title, description, cover_pic, cover_bg, skills, user_id, created_at, updated_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO characters (name, title, description, cover_pic, cover_bg, universe, skills, user_id, created_at, updated_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `
 
 	_, err = db.Exec(query, character.Name, character.Title, character.Description,
-		character.CoverPic, character.CoverBg, jsonSkills, character.UserID, time.Now(), time.Now())
+		character.CoverPic, character.CoverBg, character.Universe, jsonSkills, character.UserID, time.Now(), time.Now())
 
 	return err
 }

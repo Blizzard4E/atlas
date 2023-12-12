@@ -107,3 +107,47 @@ export async function logOut() {
     }
     return { status: 200 };
 }
+
+interface Character {
+    name: string | null | undefined;
+    title: string | null | undefined;
+    description: string | null | undefined;
+    universe: string | null | undefined;
+    cover_pic: string | null | undefined;
+    cover_bg: string | null | undefined;
+    skills: {
+        pic: string | null | undefined;
+        title: string | null | undefined;
+        description: string | null | undefined;
+    }[];
+}
+
+export async function createCharacter(characterData: Character) {
+    console.log(characterData);
+    let res = await fetch("http://localhost:8080/create-character", {
+        cache: "no-store",
+        headers: {
+            "Content-Type": "application/json",
+            Cookie: cookies().toString(),
+        },
+        method: "POST",
+        body: JSON.stringify(characterData),
+    });
+    let data = await res.json();
+    console.log(data);
+    if (res.status == 200) {
+        return { status: 200, characterData: data };
+    }
+    return { status: 400 };
+}
+
+export async function getCharactersAction() {
+    const res = await fetch("http://localhost:8080/characters", {
+        cache: "no-store",
+        headers: {
+            "Content-Type": "application/json",
+            Cookie: cookies().toString(),
+        },
+    });
+    return res.json();
+}
